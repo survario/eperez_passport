@@ -19,7 +19,7 @@ socket.on('data', async (data) => {
     const response = await res.json();
     console.log(response.userName);
 
-    greeting.innerHTML = `Bienvenido(a) ${response.userName}`;
+    greeting.innerHTML = `Bienvenido ${response.userName}`;
     logoutMsg.innerHTML = `Hasta Luego ${response.userName}`;
 
     
@@ -43,7 +43,7 @@ const addProduct = async(e, form) => {
     title.value = '';
     price.value = '';
     thumbnail.value = '';
-    socket.emit('newProduct','Producto agregado')
+    socket.emit('newProduct','producto cargado!')
 
 }
 
@@ -85,14 +85,14 @@ const render = (data) => {
 }
 
 logout.addEventListener('click', async() => { 
-    await fetch('/logout', {
+    const res = await fetch('http://localhost:8080/logout', {
         method:'GET'
     })
-
+    
     logoutContainer.classList.remove('d-none');
     mainContainer.classList.add('d-none');
 
     setTimeout(() => {
-        window.location.reload();
+        window.location.href = res.url;
     }, 2000);
 })

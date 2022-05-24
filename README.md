@@ -16,6 +16,8 @@ A través del navegador, acceder a las rutas:
 
 - localhost:8080/login
 
+- localhost:8080/registrar
+
 - localhost:8080/api/productos-test (productos generados con faker)
 
 ------------------------------------------------------------------------
@@ -27,13 +29,15 @@ URL: 'mongodb://localhost:27017/ecommerce'
 
 Para conectar a otra base de datos Mongo:
 
-En el archivo /index.js, reemplazar la URL de Mongo localhost por la URL correspondiente en las líneas 18 y 36.
+En el archivo /index.js, reemplazar la URL de Mongo localhost por la URL correspondiente en las líneas 17 y 37.
 
 
 
 --------------------------------------------------------------
 
 Dependencias utilizadas: 
+
+    bcrypt,
 
     connect-mongo,
 
@@ -48,6 +52,10 @@ Dependencias utilizadas:
     mongoose,
 
     normalizr,
+    
+    passport,
+
+    passport-local,
 
     socket.io
 

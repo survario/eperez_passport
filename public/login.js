@@ -1,7 +1,9 @@
+import { response } from "express";
+
 const login = async(e, form) => {
 
     e.preventDefault();
-    await fetch(form.action, 
+    const res = await fetch(form.action, 
         {   
             method:'POST', 
             headers: {
@@ -11,5 +13,4 @@ const login = async(e, form) => {
             body: JSON.stringify(Object.fromEntries(new FormData(form)))
         }
     );
-    window.location.reload();
 }

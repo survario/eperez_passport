@@ -16,11 +16,11 @@
     <div class="container mt-5">
         <div class="jumbotron">
             <div class="row">
-                <h1>Login de Usuario</h1>
+                <h1>Registrar Usuario</h1>
             </div>
-            <form class="mt-3" action="/login" method="POST" onsubmit="login(event, this)">
+            <form class="mt-3" action="/registrar" method="POST" onsubmit="login(event, this)">
                 <div class="form-group">
-                    <label for="username">Usuario:</label>
+                    <label for="userName">Usuario:</label>
                     <input type="text" class="form-control" id="username" name="username" placeholder="...">
                 </div>
                 <div class="form-group">
@@ -28,9 +28,9 @@
                     <input type="text" class="form-control" id="password" name="password" placeholder="...">
                 </div>
                 <input id="ingresar" class="btn btn-success my-2" type="submit" value="Ingresar">
-            </form>            
-            </br></br>
-            <a href="/registrar" class="btn btn-success my-2">Ir a Registrar</a>
+            </form>
+        </br></br>
+        <a href="/login" class="btn btn-success my-2">Ir al Login</a>
         </div>
     </div>
     <script src="login.js"></script>

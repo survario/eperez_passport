@@ -8,15 +8,14 @@ import Messages from './controllers/Messages.js'
 import mongoose from 'mongoose';
 import session from 'express-session'
 import MongoStore from 'connect-mongo';
+import passport from 'passport';
+import passportLocal from 'passport-local';
+import { users } from './models/users.js';
+import bcrypt from 'bcrypt';
 
-/*
-mongoose.connect('mongodb://localhost:27017/ecommerce', { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(()=> console.log('Conexión exitosa'))
-    .catch(err => console.log(err))
-*/
 
 mongoose.connect('mongodb://localhost:27017/ecommerce', { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(()=> console.log('Conexión exitosa'))
+    .then(()=> console.log('conexion exitosa!'))
     .catch(err => console.log(err))
 
 const messages = new Messages();
@@ -27,6 +26,8 @@ const PORT = process.env.PORT || 8080;
 
 const server = createServer(app);
 const io = new Server(server);
+
+const LocalStrategy = passportLocal.Strategy;
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -54,56 +55,146 @@ app.set("view engine", "ejs");
 app.set("views", "./views");
 
 server.listen(PORT, () => {
-    console.log(`Servidor levantado en el puerto http://localhost:${PORT}`);
+    console.log(`El servidor esta corriendo en http://localhost:${PORT}`);
 });
 
 server.on('error', error => {
     console.log('Error:', error);
 });
 
-// --------------- Desafio Log-In ---------------
+// ------------------ DESAFIO 26 ------------------
 
-const auth = (req, res, next) => {
-    if (req.session.userName) {
-        return next();
-    } else {
-        return res.sendFile(`${__dirname}/public/login.html`);
-    }
-};
+passport.use('login', new LocalStrategy({
+    passReqToCallback: true
+  },
+    function (req, username, password, done) {
+      users.findOne({ 'username': username },
+        function (err, user) {
+          if (err)
+            return done(err);
+          if (!user) {
+            console.log('User Not Found with username ' + username);
+            return done(null, false,
+              console.log('message', 'User Not found.'));
+          }
+          if (!isValidPassword(user, password)) {
+            console.log('Invalid Password');
+            return done(null, false,
+              console.log('message', 'Invalid Password'));
+          }
+          return done(null, user);
+        }
+      );
+    })
+  );
 
-app.get('/login',auth, (req, res) => {
-    req.session.cookie.maxAge = 60000;
-    res.sendFile(`${__dirname}/public/index.html`)
+  var isValidPassword = function (user, password) {
+    return bcrypt.compareSync(password, user.password);
+  }
+
+  passport.use('signup', new LocalStrategy({
+    passReqToCallback: true
+  },
+    function (req, username, password, done) {
+        users.findOne({ 'username': username }, function (err, user) {
+          if (err) {
+            console.log('Error in SignUp: ' + err);
+            return done(err);
+          }
+          if (user) {
+            console.log('User already exists');
+            return done(null, false,
+              console.log('message', 'User Already Exists'));
+          } else {
+            var newUser = new users();
+            newUser.username = username;
+            newUser.password = createHash(password);
+            newUser.email = req.body.email;
+            newUser.firstName = req.body.firstName;
+            newUser.lastName = req.body.lastName;
+  
+            newUser.save(function (err) {
+              if (err) {
+                console.log('Error in Saving user: ' + err);
+                throw err;
+              }
+              console.log('User Registration successful');
+              return done(null, newUser);
+            });
+          }
+        }); 
+    })
+  )
+  var createHash = function (password) {
+    return bcrypt.hashSync(password, bcrypt.genSaltSync(10), null);
+  }
+
+passport.serializeUser(function (user, done) {
+    done(null, user._id);
+  });
+  
+  passport.deserializeUser(function (id, done) {
+    users.findById(id, function (err, user) {
+      done(err, user);
+    });
+  });
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.get('/login', (req,res) => {
+    if (req.isAuthenticated()) {
+        var user = req.user;
+        console.log('user logueado');
+        res.sendFile(__dirname + '/public/index.html');
+      }
+      else {
+        console.log('user NO logueado');
+        res.sendFile(__dirname + '/public/login.html');
+      }
 })
 
-app.post('/login', (req, res) => {
-    console.log(req.body.userName)
-    req.session.userName = req.body.userName;
-    res.send({userName: req.body.userName});
+app.post('/login', passport.authenticate('login', { failureRedirect: '/faillogin' }), (req,res)=>{
+        let user = req.user;
+        res.sendFile(__dirname + '/public/index.html');
+});
+
+app.get('/faillogin', (req,res)=> {
+    res.sendFile(__dirname + '/public/faillogin.html');
+});
+
+app.get('/registrar', (req,res)=> {
+    res.sendFile(__dirname + '/public/register.html');
 })
+
+app.post('/registrar', passport.authenticate('signup', {failureRedirect: '/failreg'}), (req, res) => {
+
+    res.sendFile(__dirname + '/public/login.html')
+});
+
+app.get('/failreg', (req,res)=> {
+    res.sendFile(__dirname + '/public/failreg.html');
+});
 
 app.get('/username', (req, res) => {
-    res.send({userName: req.session.userName});
+    res.send({userName: req.user.username});
 })
 
-app.get('/logout', (req, res) => {
-    req.session.destroy(err => {
-        if (!err) res.send('Logout ok!')
-        else res.send({ status: 'Logout ERROR', body: err })
-    })
+app.get('/logout', (req, res, next) => {
+    req.logout(function(err) {
+        if(err) { return next(err); }
+        console.log('sesión cerrada')
+        res.sendFile(__dirname + '/public/login.html');
+    }); 
 }) 
 
-app.get('*', (req, res) => {
-    res.sendFile(`${__dirname}/public/warn.html`)
-})
-
-// ---------------------------------------------
+// ------------------------------------------------------
 
 io.on('connection', async (socket) => {
 
     const arrayMsg = await messages.getMessages();
 
-    console.log('Cliente conectado');
+    console.log('un cliente se conecto!');
     socket.emit('data', await productos.getProducts());
     socket.emit('messages', await messages.getMessages());
     

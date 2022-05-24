@@ -12,4 +12,3 @@ const schema = mongoose.Schema({
 });
 
 export const mensajes = mongoose.model('mensajes', schema);
-
